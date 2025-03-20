@@ -198,3 +198,70 @@ export async function updateRecomment(commentId: string, commentFormData: any) {
     return null;
   }
 }
+
+export async function searchQuery(query: string) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_URL}/api/google-search/${query}`,
+      { method: "GET" }
+    );
+
+    switch (response.status) {
+      case 200: {
+        const data = await response.json();
+        return data.items.map((item: any) => {
+          return {
+            title: item.title,
+            link: item.link,
+            snippet: item.snippet,
+          };
+        });
+      }
+      case 400:
+        throw new Error("400 Bad Request: 요청이 잘못되었습니다.");
+      case 401:
+        throw new Error("401 Unauthorized: 인증이 필요합니다.");
+      case 403:
+        throw new Error(
+          "403 Forbidden: 접근이 금지되었습니다. 할당량이 초과되거나, 권한이 없습니다."
+        );
+      case 404:
+        throw new Error("404 Not Found: 해당 리소스를 찾을 수 없습니다.");
+      case 429:
+        throw new Error("429 Too Many Request: 요청 횟수가 초과되었습니다.");
+      case 500:
+        throw new Error(
+          "500 Internal Server Error: 서버에서 오류가 발생했습니다."
+        );
+      default:
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    throw error;
+  }
+}
+
+export async function relatedArticleList(
+  searchResult: Array<any>,
+  query: string
+) {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_URL}/api/openai/getRelatedArticles`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ searchResult, query }),
+      }
+    );
+
+    if (response.status === 200) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
